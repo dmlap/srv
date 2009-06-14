@@ -1,9 +1,11 @@
 package name.dml
 
 import java.net.InetSocketAddress
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer,ByteOrder}
 import java.nio.channels.{Selector,SelectionKey,ServerSocketChannel,SocketChannel,Channel}
 import java.nio.channels.SelectionKey._
+import java.nio.charset.Charset
+import java.nio.charset.CharsetDecoder
 import scala.actors.Actor
 import scala.actors.Actor._
 import scala.collection.mutable.Map
@@ -11,18 +13,21 @@ import scala.collection.jcl.Conversions._
 import scala.reflect.Manifest
 
 class XmppServerRegistry extends DispatcherComponent with HandlerComponent {
+  // dispatcher depenencies
   val selector = Selector.open
   val channel: ServerSocketChannel = ServerSocketChannel.open
   val port = 5222
-  
-  def alloc(capacity: Int) = ByteBuffer.allocateDirect(capacity)
-  
+  def handle(channel: SocketChannel) = connection(channel)
   channel.socket bind (new InetSocketAddress (port))
   channel configureBlocking false
   channel.register(selector, channel.validOps)
   
+  // charconnection dependencies
+  def alloc(capacity: Int) = ByteBuffer.allocateDirect(capacity).order(ByteOrder.nativeOrder)
+  def charset = Charset.availableCharsets.get("UTF-8")
+  
+  // start
   val dispatcher = new Dispatcher
-  dispatcher.start
 }
 
 trait DispatcherComponent {
@@ -31,6 +36,9 @@ trait DispatcherComponent {
   
   class Dispatcher extends Actor {
     val handlers = Map(): Map[Channel, Actor]
+    
+    this.start
+    
     def act = {
       loop {
         selector.selectNow match {
@@ -64,16 +72,18 @@ trait DispatcherComponent {
 }
 
 sealed abstract class HandlerMsg
-case object Init extends HandlerMsg
 case object Read extends HandlerMsg
 
 trait HandlerComponent {
   def alloc(capacity: Int): ByteBuffer
+  def charset: Charset
   
-  def handle(channel: SocketChannel) = new Handler(channel)
+  def connection(channel: SocketChannel) = new CharConnection(channel)
   
-  class Handler(private val channel: SocketChannel) extends Actor {
+  class CharConnection(private val channel: SocketChannel) extends Actor {
     val buffer = alloc(8192)
+    val decoder = charset.newDecoder
+    
     def act = {
       loop {
         react {
@@ -83,8 +93,13 @@ trait HandlerComponent {
                 channel.close
                 exit
               }
-              case _ => {
-                println(buffer.asCharBuffer)
+              case 0 => ()
+              case n: Int => {
+                buffer.flip
+                val in = decoder decode buffer
+//                val arr = new Array[Byte](n)
+//                buffer.get(arr)
+//                val str = new String(arr, "UTF-8")
                 buffer.clear
               }
             }
