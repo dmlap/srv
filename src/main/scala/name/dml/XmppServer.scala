@@ -12,8 +12,8 @@ import scala.collection.mutable.Map
 import scala.collection.jcl.Conversions._
 import scala.reflect.Manifest
 
-class XmppServerRegistry extends DispatcherComponent with HandlerComponent {
-  // dispatcher depenencies
+class XmppServerRegistry extends DispatcherComponent with ConnectionComponent {
+  // dispatcher
   val selector = Selector.open
   val channel: ServerSocketChannel = ServerSocketChannel.open
   val port = 5222
@@ -22,9 +22,9 @@ class XmppServerRegistry extends DispatcherComponent with HandlerComponent {
   channel configureBlocking false
   channel.register(selector, channel.validOps)
   
-  // charconnection dependencies
+  // charconnection
   def alloc(capacity: Int) = ByteBuffer.allocateDirect(capacity).order(ByteOrder.nativeOrder)
-  def charset = Charset.availableCharsets.get("UTF-8")
+  val charset = Charset.availableCharsets.get("UTF-8")
   
   // start
   val dispatcher = new Dispatcher
@@ -74,9 +74,9 @@ trait DispatcherComponent {
 sealed abstract class HandlerMsg
 case object Read extends HandlerMsg
 
-trait HandlerComponent {
+trait ConnectionComponent {
   def alloc(capacity: Int): ByteBuffer
-  def charset: Charset
+  val charset: Charset
   
   def connection(channel: SocketChannel) = new CharConnection(channel)
   

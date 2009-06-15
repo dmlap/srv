@@ -2,11 +2,11 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>name.dml</groupId>
-  <artifactId>scx</artifactId>
+  <artifactId>srv</artifactId>
   <version>0.1-SNAPSHOT</version>
   <inceptionYear>2008</inceptionYear>
   <properties>
-    <scala.version>2.7.5</scala.version>
+    <scala.version>2.8.0</scala.version>
   </properties>
 
   <repositories>
@@ -42,6 +42,17 @@
       <artifactId>smack</artifactId>
       <version>3.0.4</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>scala.continuations</groupId>
+      <artifactId>selectivecps-plugin</artifactId>
+      <version>0.1</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>scala.continuations</groupId>
+      <artifactId>selectivecps-library</artifactId>
+      <version>0.1</version>
     </dependency>
   </dependencies>
 
@@ -91,7 +102,15 @@
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
         <configuration>
+          <displayCmd>true</displayCmd>
           <scalaVersion>${scala.version}</scalaVersion>
+          <compilerPlugins>
+            <compilerPlugin>
+              <groupId>scala.continuations</groupId>
+              <artifactId>selectivecps-plugin</artifactId>
+              <version>0.1</version>
+            </compilerPlugin>
+          </compilerPlugins>
         </configuration>
       </plugin>
     </plugins>
